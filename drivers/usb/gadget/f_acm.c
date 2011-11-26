@@ -108,7 +108,7 @@ static struct usb_interface_assoc_descriptor acm_iad_descriptor __initdata = {
 	.bInterfaceCount = 	2,	// control + data
 	.bFunctionClass =	USB_CLASS_COMM,
 	.bFunctionSubClass =	USB_CDC_SUBCLASS_ACM,
-	.bFunctionProtocol =	USB_CDC_ACM_PROTO_AT_V25TER,
+	.bFunctionProtocol =	USB_CDC_PROTO_NONE,
 	/* .iFunction =		DYNAMIC */
 };
 
