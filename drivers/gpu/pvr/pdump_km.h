@@ -1,6 +1,6 @@
 /**********************************************************************
  *
- * Copyright (C) Imagination Technologies Ltd. All rights reserved.
+ * Copyright(c) 2008 Imagination Technologies Ltd. All rights reserved.
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -79,7 +79,7 @@ extern IMG_UINT32 g_ui32EveryLineCounter;
 									   IMG_UINT32			ui32Bytes,
 									   IMG_UINT32			ui32Flags,
 									   IMG_HANDLE			hUniqueTag);
-	PVRSRV_ERROR PDumpMemPagesKM(PVRSRV_DEVICE_IDENTIFIER *psDevID,
+	PVRSRV_ERROR PDumpMemPagesKM(PVRSRV_DEVICE_TYPE	eDeviceType,
 								 IMG_DEV_PHYADDR		*pPages,
 								 IMG_UINT32			ui32NumPages,
 								 IMG_DEV_VIRTADDR	sDevAddr,
@@ -124,13 +124,11 @@ extern IMG_UINT32 g_ui32EveryLineCounter;
 										IMG_UINT32 ui32RegAddr,
 										IMG_UINT32 ui32RegValue,
 										IMG_UINT32 ui32Mask,
-										IMG_UINT32 ui32Flags,
-										PDUMP_POLL_OPERATOR	eOperator);
+										IMG_UINT32 ui32Flags);
 	PVRSRV_ERROR PDumpRegPolKM(IMG_CHAR *pszPDumpRegName,
 								IMG_UINT32 ui32RegAddr,
 								IMG_UINT32 ui32RegValue,
-								IMG_UINT32 ui32Mask,
-								PDUMP_POLL_OPERATOR	eOperator);
+								IMG_UINT32 ui32Mask);
 
 	IMG_IMPORT PVRSRV_ERROR PDumpBitmapKM(PVRSRV_DEVICE_NODE *psDeviceNode,
 										  IMG_CHAR *pszFileName,
@@ -173,7 +171,7 @@ extern IMG_UINT32 g_ui32EveryLineCounter;
 	IMG_BOOL PDumpIsLastCaptureFrameKM(IMG_VOID);
 	IMG_IMPORT IMG_BOOL PDumpIsCaptureFrameKM(IMG_VOID);
 
-	IMG_VOID PDumpMallocPagesPhys(PVRSRV_DEVICE_IDENTIFIER	*psDevID,
+	IMG_VOID PDumpMallocPagesPhys(PVRSRV_DEVICE_TYPE	eDeviceType,
 								  IMG_UINT32			ui32DevVAddr,
 								  IMG_PUINT32			pui32PhysPages,
 								  IMG_UINT32			ui32NumPages,
@@ -269,7 +267,6 @@ extern IMG_UINT32 g_ui32EveryLineCounter;
 										IMG_UINT32			ui32FileOffset,
 										IMG_DEV_VIRTADDR	sDevBaseAddr,
 										IMG_UINT32 			ui32Size,
-										IMG_UINT32			ui32MMUContextID,
 										IMG_UINT32 			ui32PDumpFlags);
 
 	PVRSRV_ERROR PDumpSignatureBuffer(PVRSRV_DEVICE_IDENTIFIER *psDevId,
@@ -278,7 +275,6 @@ extern IMG_UINT32 g_ui32EveryLineCounter;
 									  IMG_UINT32		ui32FileOffset,
 									  IMG_DEV_VIRTADDR	sDevBaseAddr,
 									  IMG_UINT32 		ui32Size,
-									  IMG_UINT32		ui32MMUContextID,
 									  IMG_UINT32 		ui32PDumpFlags);
 
 	PVRSRV_ERROR PDumpCBP(PPVRSRV_KERNEL_MEM_INFO	psROffMemInfo,

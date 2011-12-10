@@ -1,6 +1,6 @@
 /**********************************************************************
  *
- * Copyright (C) Imagination Technologies Ltd. All rights reserved.
+ * Copyright(c) 2008 Imagination Technologies Ltd. All rights reserved.
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -47,8 +47,8 @@ static IMPLEMENT_LIST_REMOVE(PVRSRV_STUB_PBDESC)
 static PRESMAN_ITEM psResItemCreateSharedPB = IMG_NULL;
 static PVRSRV_PER_PROCESS_DATA *psPerProcCreateSharedPB = IMG_NULL;
 
-static PVRSRV_ERROR SGXCleanupSharedPBDescCallback(IMG_PVOID pvParam, IMG_UINT32 ui32Param, IMG_BOOL bDummy);
-static PVRSRV_ERROR SGXCleanupSharedPBDescCreateLockCallback(IMG_PVOID pvParam, IMG_UINT32 ui32Param, IMG_BOOL bDummy);
+static PVRSRV_ERROR SGXCleanupSharedPBDescCallback(IMG_PVOID pvParam, IMG_UINT32 ui32Param);
+static PVRSRV_ERROR SGXCleanupSharedPBDescCreateLockCallback(IMG_PVOID pvParam, IMG_UINT32 ui32Param);
 
 IMG_EXPORT PVRSRV_ERROR
 SGXFindSharedPBDescKM(PVRSRV_PER_PROCESS_DATA	*psPerProc,
@@ -185,7 +185,6 @@ SGXCleanupSharedPBDescKM(PVRSRV_STUB_PBDESC *psStubPBDescIn)
 	psStubPBDescIn->ui32RefCount--;
 	if (psStubPBDescIn->ui32RefCount == 0)
 	{
-		IMG_DEV_VIRTADDR sHWPBDescDevVAddr = psStubPBDescIn->sHWPBDescDevVAddr;
 		List_PVRSRV_STUB_PBDESC_Remove(psStubPBDescIn);
 		for(i=0 ; i<psStubPBDescIn->ui32SubKernelMemInfosCount; i++)
 		{
@@ -216,25 +215,23 @@ SGXCleanupSharedPBDescKM(PVRSRV_STUB_PBDESC *psStubPBDescIn)
 
 		
 		SGXCleanupRequest(psDeviceNode,
-						  &sHWPBDescDevVAddr,
-						  PVRSRV_CLEANUPCMD_PB,
-						  CLEANUP_WITH_POLL);
+						  IMG_NULL,
+						  PVRSRV_CLEANUPCMD_PB);
 	}
 	return PVRSRV_OK;
 	
 }
 
-static PVRSRV_ERROR SGXCleanupSharedPBDescCallback(IMG_PVOID pvParam, IMG_UINT32 ui32Param, IMG_BOOL bDummy)
+static PVRSRV_ERROR SGXCleanupSharedPBDescCallback(IMG_PVOID pvParam, IMG_UINT32 ui32Param)
 {
 	PVRSRV_STUB_PBDESC *psStubPBDesc = (PVRSRV_STUB_PBDESC *)pvParam;
 
 	PVR_UNREFERENCED_PARAMETER(ui32Param);
-	PVR_UNREFERENCED_PARAMETER(bDummy);
 
 	return SGXCleanupSharedPBDescKM(psStubPBDesc);
 }
 
-static PVRSRV_ERROR SGXCleanupSharedPBDescCreateLockCallback(IMG_PVOID pvParam, IMG_UINT32 ui32Param, IMG_BOOL bDummy)
+static PVRSRV_ERROR SGXCleanupSharedPBDescCreateLockCallback(IMG_PVOID pvParam, IMG_UINT32 ui32Param)
 {
 #ifdef DEBUG
 	PVRSRV_PER_PROCESS_DATA *psPerProc = (PVRSRV_PER_PROCESS_DATA *)pvParam;
@@ -244,7 +241,6 @@ static PVRSRV_ERROR SGXCleanupSharedPBDescCreateLockCallback(IMG_PVOID pvParam, 
 #endif
 
 	PVR_UNREFERENCED_PARAMETER(ui32Param);
-	PVR_UNREFERENCED_PARAMETER(bDummy);
 
 	psPerProcCreateSharedPB = IMG_NULL;
 	psResItemCreateSharedPB = IMG_NULL;
@@ -258,7 +254,7 @@ SGXUnrefSharedPBDescKM(IMG_HANDLE hSharedPBDesc)
 {
 	PVR_ASSERT(hSharedPBDesc != IMG_NULL);
 
-	return ResManFreeResByPtr(hSharedPBDesc, CLEANUP_WITH_POLL);
+	return ResManFreeResByPtr(hSharedPBDesc);
 }
 
 
@@ -272,8 +268,7 @@ SGXAddSharedPBDescKM(PVRSRV_PER_PROCESS_DATA	*psPerProc,
 					 IMG_UINT32					ui32TotalPBSize,
 					 IMG_HANDLE					*phSharedPBDesc,
 					 PVRSRV_KERNEL_MEM_INFO		**ppsSharedPBDescSubKernelMemInfos,
-					 IMG_UINT32					ui32SharedPBDescSubKernelMemInfosCount,
-					 IMG_DEV_VIRTADDR			sHWPBDescDevVAddr)
+					 IMG_UINT32					ui32SharedPBDescSubKernelMemInfosCount)
 {
 	PVRSRV_STUB_PBDESC *psStubPBDesc=IMG_NULL;
 	PVRSRV_ERROR eRet = PVRSRV_ERROR_INVALID_PERPROC;
@@ -290,7 +285,7 @@ SGXAddSharedPBDescKM(PVRSRV_PER_PROCESS_DATA	*psPerProc,
 	{
 		PVR_ASSERT(psResItemCreateSharedPB != IMG_NULL);
 
-		ResManFreeResByPtr(psResItemCreateSharedPB, CLEANUP_WITH_POLL);
+		ResManFreeResByPtr(psResItemCreateSharedPB);
 
 		PVR_ASSERT(psResItemCreateSharedPB == IMG_NULL);
 		PVR_ASSERT(psPerProcCreateSharedPB == IMG_NULL);
@@ -406,8 +401,6 @@ SGXAddSharedPBDescKM(PVRSRV_PER_PROCESS_DATA	*psPerProc,
 			goto NoAdd;
 		}
 	}
-
-	psStubPBDesc->sHWPBDescDevVAddr = sHWPBDescDevVAddr;
 
 	psResItem = ResManRegisterRes(psPerProc->hResManContext,
 								  RESMAN_TYPE_SHARED_PB_DESC,

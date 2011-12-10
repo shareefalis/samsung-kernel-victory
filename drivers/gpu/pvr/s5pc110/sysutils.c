@@ -27,12 +27,10 @@
 #include "services_headers.h"
 #include "sysinfo.h"
 
-PVRSRV_ERROR SysPowerLockWrap(IMG_BOOL bTryLock)
-{                                                               
-	return PVRSRV_OK;                                       
-}                                                               
-                                                                
-IMG_VOID SysPowerLockUnwrap(IMG_VOID)
-{                                                               
-}                                                               
+
+
+
+
+
+
 

@@ -1,6 +1,6 @@
 /**********************************************************************
  *
- * Copyright (C) Imagination Technologies Ltd. All rights reserved.
+ * Copyright(c) 2008 Imagination Technologies Ltd. All rights reserved.
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -22,7 +22,8 @@
  * Imagination Technologies Ltd. <gpl-support@imgtec.com>
  * Home Park Estate, Kings Langley, Herts, WD4 8LZ, UK 
  *
-*******************************************************************************/
+ ******************************************************************************/
+
 #if !defined (__IMG_DEFS_H__)
 #define __IMG_DEFS_H__
 
@@ -56,33 +57,24 @@ typedef		enum	img_tag_TriStateSwitch
 #endif
 
 
-/* Use this in any file, or use attributes under GCC - see below */
 #ifndef PVR_UNREFERENCED_PARAMETER
 #define	PVR_UNREFERENCED_PARAMETER(param) (param) = (param)
 #endif
 
-/* The best way to supress unused parameter warnings using GCC is to use a
- * variable attribute.  Place the unref__ between the type and name of an
- * unused parameter in a function parameter list, eg `int unref__ var'. This
- * should only be used in GCC build environments, for example, in files that
- * compile only on Linux. Other files should use UNREFERENCED_PARAMETER */
 #ifdef __GNUC__
 #define unref__ __attribute__ ((unused))
 #else
 #define unref__
 #endif
 
-/*
-	Wide character definitions
-*/
 #ifndef _TCHAR_DEFINED
 #if defined(UNICODE)
 typedef unsigned short		TCHAR, *PTCHAR, *PTSTR;
-#else	/* #if defined(UNICODE) */
+#else	
 typedef char				TCHAR, *PTCHAR, *PTSTR;
-#endif	/* #if defined(UNICODE) */
+#endif	
 #define _TCHAR_DEFINED
-#endif /* #ifndef _TCHAR_DEFINED */
+#endif 
 
 
 			#if defined(__linux__) || defined(__METAG)
@@ -97,7 +89,6 @@ typedef char				TCHAR, *PTCHAR, *PTSTR;
 					#error("define an OS")
 			#endif
 
-// Use default definition if not overridden
 #ifndef IMG_ABORT
 	#define IMG_ABORT()	abort()
 #endif
@@ -118,19 +109,10 @@ typedef char				TCHAR, *PTCHAR, *PTSTR;
 #define IMG_FORMAT_PRINTF(x,y)
 #endif
 
-/*
- * Cleanup request defines
-  */
-#define  CLEANUP_WITH_POLL		IMG_FALSE
-#define  FORCE_CLEANUP			IMG_TRUE
-
 #if defined (_WIN64)
 #define IMG_UNDEF	(~0ULL)
 #else
 #define IMG_UNDEF	(~0UL)
 #endif
 
-#endif /* #if !defined (__IMG_DEFS_H__) */
-/*****************************************************************************
- End of file (IMG_DEFS.H)
-*****************************************************************************/
+#endif 

@@ -1,6 +1,6 @@
 /**********************************************************************
  *
- * Copyright (C) Imagination Technologies Ltd. All rights reserved.
+ * Copyright(c) 2008 Imagination Technologies Ltd. All rights reserved.
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -86,15 +86,9 @@ void PVRSRVDebugPrintf	(
 	if (gPVRDebugLevel & ui32DebugLevel)
 	{
 		va_list vaArgs;
-		char szBuffer[256];
-		char *szBufferEnd = szBuffer;
-		char *szBufferLimit = szBuffer + sizeof(szBuffer) - 1;
+		static char szBuffer[256];
 
-		
-		*szBufferLimit = '\0';
-
-		snprintf(szBufferEnd, szBufferLimit - szBufferEnd, "PVR_K:");
-		szBufferEnd += strlen(szBufferEnd);
+		va_start (vaArgs, pszFormat);
 
 		
 		if (bTrace == IMG_FALSE)
@@ -103,54 +97,52 @@ void PVRSRVDebugPrintf	(
 			{
 				case DBGPRIV_FATAL:
 				{
-					snprintf(szBufferEnd, szBufferLimit - szBufferEnd, "(Fatal):");
+					strcpy (szBuffer, "PVR_K:(Fatal): ");
 					break;
 				}
 				case DBGPRIV_ERROR:
 				{
-					snprintf(szBufferEnd, szBufferLimit - szBufferEnd, "(Error):");
+					strcpy (szBuffer, "PVR_K:(Error): ");
 					break;
 				}
 				case DBGPRIV_WARNING:
 				{
-					snprintf(szBufferEnd, szBufferLimit - szBufferEnd, "(Warning):");
+					strcpy (szBuffer, "PVR_K:(Warning): ");
 					break;
 				}
 				case DBGPRIV_MESSAGE:
 				{
-					snprintf(szBufferEnd, szBufferLimit - szBufferEnd, "(Message):");
+					strcpy (szBuffer, "PVR_K:(Message): ");
 					break;
 				}
 				case DBGPRIV_VERBOSE:
 				{
-					snprintf(szBufferEnd, szBufferLimit - szBufferEnd, "(Verbose):");
+					strcpy (szBuffer, "PVR_K:(Verbose): ");
 					break;
 				}
 				default:
 				{
-					snprintf(szBufferEnd, szBufferLimit - szBufferEnd, "(Unknown message level)");
+					strcpy (szBuffer, "PVR_K:(Unknown message level)");
 					break;
 				}
 			}
-			szBufferEnd += strlen(szBufferEnd);
 		}
-		snprintf(szBufferEnd, szBufferLimit - szBufferEnd, " ");
-		szBufferEnd += strlen(szBufferEnd);
+		else
+		{
+			strcpy (szBuffer, "PVR_K: ");
+		}
 
-		va_start (vaArgs, pszFormat);
-		vsnprintf(szBufferEnd, szBufferLimit - szBufferEnd, pszFormat, vaArgs);
-		va_end (vaArgs);
-		szBufferEnd += strlen(szBufferEnd);
+		vsprintf (&szBuffer[strlen(szBuffer)], pszFormat, vaArgs);
 
  		
  		if (bTrace == IMG_FALSE)
 		{
-			snprintf(szBufferEnd, szBufferLimit - szBufferEnd, 
-			         " [%d, %s]", (int)ui32Line, pszFileName);
-			szBufferEnd += strlen(szBufferEnd);
+			sprintf (&szBuffer[strlen(szBuffer)], " [%d, %s]", (int)ui32Line, pszFileName);
 		}
 
 		printk(KERN_INFO "%s\r\n", szBuffer);
+
+		va_end (vaArgs);
 	}
 }
 #endif	
@@ -219,31 +211,17 @@ IMG_VOID HostCreateRegDeclStreams(IMG_VOID)
     
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,37))
-typedef	struct mutex		MUTEX;
-#define	INIT_MUTEX(m)		mutex_init(m)
-#define	DOWN_TRYLOCK(m)		(!mutex_trylock(m))
-#define	DOWN(m)			mutex_lock(m)
-#define UP(m)			mutex_unlock(m)
-#else
-typedef	struct semaphore	MUTEX;
-#define	INIT_MUTEX(m)		init_MUTEX(m)
-#define	DOWN_TRYLOCK(m)		down_trylock(m)
-#define	DOWN(m)			down(m)
-#define UP(m)			up(m)
-#endif
-
-IMG_VOID *HostCreateMutex(IMG_VOID)
+IMG_VOID * HostCreateMutex(IMG_VOID)
 {
-	MUTEX *psMutex;
+	struct semaphore *psSem;
 
-	psMutex = kmalloc(sizeof(*psMutex), GFP_KERNEL);
-	if (psMutex)
+	psSem = kmalloc(sizeof(*psSem), GFP_KERNEL);
+	if (psSem)
 	{
-		INIT_MUTEX(psMutex);
+		init_MUTEX(psSem);
 	}
 
-	return psMutex;
+	return psSem;
 }
 
 IMG_VOID HostAquireMutex(IMG_VOID * pvMutex)
@@ -251,19 +229,19 @@ IMG_VOID HostAquireMutex(IMG_VOID * pvMutex)
 	BUG_ON(in_interrupt());
 
 #if defined(PVR_DEBUG_DBGDRV_DETECT_HOST_MUTEX_COLLISIONS)
-	if (DOWN_TRYLOCK((MUTEX *)pvMutex))
+	if (down_trylock((struct semaphore *)pvMutex))
 	{
 		printk(KERN_INFO "HostAquireMutex: Waiting for mutex\n");
-		DOWN((MUTEX *)pvMutex);
+		down((struct semaphore *)pvMutex);
 	}
 #else
-	DOWN((MUTEX *)pvMutex);
+	down((struct semaphore *)pvMutex);
 #endif
 }
 
 IMG_VOID HostReleaseMutex(IMG_VOID * pvMutex)
 {
-	UP((MUTEX *)pvMutex);
+	up((struct semaphore *)pvMutex);
 }
 
 IMG_VOID HostDestroyMutex(IMG_VOID * pvMutex)

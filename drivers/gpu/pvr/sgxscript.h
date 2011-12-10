@@ -1,6 +1,6 @@
 /**********************************************************************
  *
- * Copyright (C) Imagination Technologies Ltd. All rights reserved.
+ * Copyright(c) 2008 Imagination Technologies Ltd. All rights reserved.
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -22,7 +22,8 @@
  * Imagination Technologies Ltd. <gpl-support@imgtec.com>
  * Home Park Estate, Kings Langley, Herts, WD4 8LZ, UK 
  *
-*****************************************************************************/
+ ******************************************************************************/
+
 #ifndef __SGXSCRIPT_H__
 #define __SGXSCRIPT_H__
 
@@ -76,8 +77,5 @@ typedef struct _SGX_INIT_SCRIPTS_
 }
 #endif
 
-#endif /* __SGXSCRIPT_H__ */
+#endif 
 
-/*****************************************************************************
- End of file (sgxscript.h)
-*****************************************************************************/
