@@ -455,6 +455,13 @@ source "drivers/misc/iwmc3200top/Kconfig"
 config SAMSUNG_MODEMCTL
 	bool "Samsung Modem Control/IO Driver"
 
+config SAMSUNG_PARAM
+	bool "Samsung Param Driver"
+	depends on MACH_HERRING
+	default n
+	help
+	  Driver for communication with Samsung's secondary bootloader
+
 config PN544
 	bool "NXP PN544 NFC Controller Driver"
 	default n
