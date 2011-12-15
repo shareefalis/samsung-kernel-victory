@@ -30,6 +30,7 @@
 
 #define CMD_RESET_OFFSET		0
 #define CMD_BACKUP_OFFSET		1
+#define CMD_CALIBRATE_OFFSET	2
 
 #define DETECT_MSG_MASK			0x80
 #define PRESS_MSG_MASK			0x40
@@ -132,6 +133,14 @@ static int __devinit mxt224_backup(struct mxt224_data *data)
 {
 	u8 buf = 0x55u;
 	return write_mem(data, data->cmd_proc + CMD_BACKUP_OFFSET, 1, &buf);
+}
+
+static int __devinit mxt224_calibrate(struct mxt224_data *data)
+{
+  /* according to comment in Motorola's Droid X source, non-zero value
+   * forces calibration */
+  u8 buf = 0x55u;
+  return write_mem(data, data->cmd_proc + CMD_CALIBRATE_OFFSET, 1, &buf);
 }
 
 static int get_object_info(struct mxt224_data *data, u8 object_type, u16 *size,
@@ -325,6 +334,7 @@ static void report_input_data(struct mxt224_data *data)
 			data->fingers[i].z = -1;
 			data->touch_mask &= ~(1U << i);
 		}
+		iter++;
 	}
 
 	if (iter == 0)
@@ -364,7 +374,7 @@ static irqreturn_t mxt224_irq_thread(int irq, void *ptr)
 			data->fingers[id].w = msg[5];
 			data->finger_mask |= 1U << id;
 			data->touch_mask &= ~(1U << id);
-            touch_state_val = 0;
+			touch_state_val = 0;
 		} else if ((msg[1] & DETECT_MSG_MASK) && (msg[1] &
 				(PRESS_MSG_MASK | MOVE_MSG_MASK))) {
 			data->fingers[id].z = msg[6];
@@ -375,7 +385,7 @@ static irqreturn_t mxt224_irq_thread(int irq, void *ptr)
 					(msg[4] & 0xF)) >> data->y_dropbits;
 			data->finger_mask |= 1U << id;
 			data->touch_mask |= 1U << id;
-            touch_state_val = 1;
+			touch_state_val = 1;
 		} else if ((msg[1] & SUPPRESS_MSG_MASK) &&
 			   (data->fingers[id].z != -1)) {
 			data->fingers[id].z = 0;
@@ -415,7 +425,7 @@ static int mxt224_internal_suspend(struct mxt224_data *data)
 	input_mt_sync(data->input_dev);
 	input_sync(data->input_dev);
 
-    touch_state_val = 0;
+	touch_state_val = 0;
 
 	data->power_off();
 
@@ -429,12 +439,19 @@ static int mxt224_internal_resume(struct mxt224_data *data)
 
 	data->power_on();
 
+	/* reset after resume */
+  	ret = mxt224_reset(data);
+  	msleep(10);
+
 	i = 0;
 	do {
 		ret = write_config(data, GEN_POWERCONFIG_T7, data->power_cfg);
-		msleep(20);
+		msleep(10);
 		i++;
 	} while (ret && i < 10);
+
+	/* calibrate after resume */
+  	mxt224_calibrate(data);
 
 	return ret;
 }
