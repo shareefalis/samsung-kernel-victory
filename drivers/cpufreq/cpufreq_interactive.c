@@ -30,7 +30,6 @@
 
 #include <asm/cputime.h>
 
-static void (*pm_idle_old)(void);
 static atomic_t active_count = ATOMIC_INIT(0);
 
 struct cpufreq_interactive_cpuinfo {
@@ -146,7 +145,7 @@ static void cpufreq_interactive_timer(unsigned long data)
 		cpu_load = 100 * (delta_time - delta_idle) / delta_time;
 
 	delta_idle = (unsigned int) cputime64_sub(now_idle,
-						  pcpu->freq_change_time_in_idle);
+						pcpu->freq_change_time_in_idle);
 	delta_time = (unsigned int) cputime64_sub(pcpu->timer_run_time,
 						  pcpu->freq_change_time);
 
@@ -176,6 +175,8 @@ static void cpufreq_interactive_timer(unsigned long data)
 	if (cpufreq_frequency_table_target(pcpu->policy, pcpu->freq_table,
 					   new_freq, CPUFREQ_RELATION_H,
 					   &index)) {
+		pr_warn_once("timer %d: cpufreq_frequency_table_target error\n",
+			     (int) data);
 		goto rearm;
 	}
 
@@ -242,16 +243,14 @@ exit:
 	return;
 }
 
-static void cpufreq_interactive_idle(void)
+static void cpufreq_interactive_idle_start(void)
 {
 	struct cpufreq_interactive_cpuinfo *pcpu =
 		&per_cpu(cpuinfo, smp_processor_id());
 	int pending;
 
-	if (!pcpu->governor_enabled) {
-		pm_idle_old();
+	if (!pcpu->governor_enabled)
 		return;
-	}
 
 	pcpu->idling = 1;
 	smp_wmb();
@@ -294,7 +293,13 @@ static void cpufreq_interactive_idle(void)
 		}
 	}
 
-	pm_idle_old();
+}
+
+static void cpufreq_interactive_idle_end(void)
+{
+	struct cpufreq_interactive_cpuinfo *pcpu =
+		&per_cpu(cpuinfo, smp_processor_id());
+
 	pcpu->idling = 0;
 	smp_wmb();
 
@@ -572,8 +577,6 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 		if (rc)
 			return rc;
 
-		pm_idle_old = pm_idle;
-		pm_idle = cpufreq_interactive_idle;
 		break;
 
 	case CPUFREQ_GOV_STOP:
@@ -599,7 +602,6 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 		sysfs_remove_group(cpufreq_global_kobject,
 				&interactive_attr_group);
 
-		pm_idle = pm_idle_old;
 		break;
 
 	case CPUFREQ_GOV_LIMITS:
@@ -613,6 +615,26 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 	}
 	return 0;
 }
+
+static int cpufreq_interactive_idle_notifier(struct notifier_block *nb,
+					     unsigned long val,
+					     void *data)
+{
+	switch (val) {
+	case IDLE_START:
+		cpufreq_interactive_idle_start();
+		break;
+	case IDLE_END:
+		cpufreq_interactive_idle_end();
+		break;
+	}
+
+	return 0;
+}
+
+static struct notifier_block cpufreq_interactive_idle_nb = {
+	.notifier_call = cpufreq_interactive_idle_notifier,
+};
 
 static int __init cpufreq_interactive_init(void)
 {
@@ -642,7 +664,7 @@ static int __init cpufreq_interactive_init(void)
 
 	/* No rescuer thread, bind to CPU queuing the work for possibly
 	   warm cache (probably doesn't matter much). */
-	down_wq = create_workqueue("knteractive_down");
+	down_wq = alloc_workqueue("knteractive_down", 0, 1);
 
 	if (!down_wq)
 		goto err_freeuptask;
@@ -653,6 +675,8 @@ static int __init cpufreq_interactive_init(void)
 	spin_lock_init(&up_cpumask_lock);
 	spin_lock_init(&down_cpumask_lock);
 	mutex_init(&set_speed_lock);
+
+	idle_notifier_register(&cpufreq_interactive_idle_nb);
 
 	return cpufreq_register_governor(&cpufreq_gov_interactive);
 

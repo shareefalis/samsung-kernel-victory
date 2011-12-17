@@ -128,6 +128,7 @@ MODULE_PARM_DESC(gPVRDebugLevel, "Sets the level of debug output (default 0x7)")
 #include <linux/omap_ion.h>
 extern struct ion_device *omap_ion_device;
 struct ion_client *gpsIONClient;
+EXPORT_SYMBOL(gpsIONClient);
 #endif 
 
  
@@ -160,10 +161,6 @@ IMG_UINT32 gui32ReleasePID;
 
 #if defined(DEBUG) && defined(PVR_MANUAL_POWER_CONTROL)
 static IMG_UINT32 gPVRPowerLevel;
-#endif
-
-#if defined(SLSI_S5PC110)
-#define SLSI_POWER_GATING
 #endif
 
 #if defined(PVR_LDM_MODULE)
